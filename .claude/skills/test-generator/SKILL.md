@@ -1,7 +1,6 @@
 ---
 name: test-generator
-description: Given an endpoint URL, method, response fields, generates
-a complete pytest test file with fixtures, parametrize, markers, positive and negative tests.
+description: Given an endpoint URL, method, response fields, generates a complete pytest test file with fixtures, parametrize, markers, positive and negative tests.
 ---
 
 Generate a complete pytest test file for this endpoint specification:
