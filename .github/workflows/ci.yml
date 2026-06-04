@@ -44,11 +44,11 @@ jobs:
         run: |
           python3 - <<'PYEOF'
           import xml.etree.ElementTree as ET, os, sys
-          root = ET.parse("test-results.xml").getroot()
-          tests    = int(root.get("tests",    0))
-          failures = int(root.get("failures", 0))
-          errors   = int(root.get("errors",   0))
-          skipped  = int(root.get("skipped",  0))
+          suites   = ET.parse("test-results.xml").getroot().findall(".//testsuite")
+          tests    = sum(int(s.get("tests",    0)) for s in suites)
+          failures = sum(int(s.get("failures", 0)) for s in suites)
+          errors   = sum(int(s.get("errors",   0)) for s in suites)
+          skipped  = sum(int(s.get("skipped",  0)) for s in suites)
           passed   = tests - failures - errors - skipped
           rate      = (passed / tests * 100) if tests else 0
           threshold = float(os.environ["PASS_RATE_THRESHOLD"])
@@ -65,11 +65,11 @@ jobs:
         run: |
           python3 - <<'PYEOF'
           import xml.etree.ElementTree as ET, os
-          root = ET.parse("test-results.xml").getroot()
-          tests    = int(root.get("tests",    0))
-          failures = int(root.get("failures", 0))
-          errors   = int(root.get("errors",   0))
-          skipped  = int(root.get("skipped",  0))
+          suites   = ET.parse("test-results.xml").getroot().findall(".//testsuite")
+          tests    = sum(int(s.get("tests",    0)) for s in suites)
+          failures = sum(int(s.get("failures", 0)) for s in suites)
+          errors   = sum(int(s.get("errors",   0)) for s in suites)
+          skipped  = sum(int(s.get("skipped",  0)) for s in suites)
           passed   = tests - failures - errors - skipped
           rate     = (passed / tests * 100) if tests else 0
           icon     = "✅" if failures + errors == 0 else "❌"
