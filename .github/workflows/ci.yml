@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+
+env:
+  PASS_RATE_THRESHOLD: "100"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Install Allure CLI
+        run: |
+          curl -fsSL -o allure.tgz \
+            https://github.com/allure-framework/allure2/releases/download/2.32.0/allure-2.32.0.tgz
+          tar -xzf allure.tgz
+          echo "$PWD/allure-2.32.0/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests
+        run: |
+          uv run pytest tests \
+            --alluredir=allure-results \
+            --junit-xml=test-results.xml \
+            -v
+        continue-on-error: true
+
+      - name: Quality gate
+        run: |
+          python3 - <<'PYEOF'
+          import xml.etree.ElementTree as ET, os, sys
+          root = ET.parse("test-results.xml").getroot()
+          tests    = int(root.get("tests",    0))
+          failures = int(root.get("failures", 0))
+          errors   = int(root.get("errors",   0))
+          skipped  = int(root.get("skipped",  0))
+          passed   = tests - failures - errors - skipped
+          rate      = (passed / tests * 100) if tests else 0
+          threshold = float(os.environ["PASS_RATE_THRESHOLD"])
+          print(f"total={tests}  passed={passed}  failed={failures+errors}  skipped={skipped}")
+          print(f"pass rate: {rate:.1f}%  threshold: {threshold}%")
+          if rate < threshold:
+              print(f"::error::Quality gate FAILED — {rate:.1f}% < {threshold}%")
+              sys.exit(1)
+          print("Quality gate PASSED")
+          PYEOF
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 - <<'PYEOF'
+          import xml.etree.ElementTree as ET, os
+          root = ET.parse("test-results.xml").getroot()
+          tests    = int(root.get("tests",    0))
+          failures = int(root.get("failures", 0))
+          errors   = int(root.get("errors",   0))
+          skipped  = int(root.get("skipped",  0))
+          passed   = tests - failures - errors - skipped
+          rate     = (passed / tests * 100) if tests else 0
+          icon     = "✅" if failures + errors == 0 else "❌"
+          summary  = "\n".join([
+              f"## {icon} Test Results",
+              "",
+              "| | |",
+              "|---|---|",
+              f"| Total | {tests} |",
+              f"| Passed | {passed} |",
+              f"| Failed | {failures + errors} |",
+              f"| Skipped | {skipped} |",
+              f"| Pass rate | {rate:.1f}% |",
+          ])
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "w") as f:
+              f.write(summary + "\n")
+          PYEOF
+
+      - name: Generate Allure report
+        if: always()
+        run: allure generate allure-results -o allure-report --clean
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 30
