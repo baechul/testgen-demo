@@ -5,7 +5,7 @@ from collections.abc import Iterator
 import httpx
 import pytest
 
-from environment_config import Environment
+from utils.environment_config import Environment
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

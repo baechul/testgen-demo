@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-CONFIG_PATH = Path(__file__).resolve().parent / "config" / "environments.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "environments.yaml"
 
 
 @dataclass(frozen=True)

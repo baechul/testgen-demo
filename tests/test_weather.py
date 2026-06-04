@@ -2,7 +2,7 @@ import json
 import allure
 import pytest
 from pathlib import Path
-from environment_config import Environment, resolve_environment
+from utils.environment_config import Environment, resolve_environment
 
 pytestmark = allure.feature("Weather API")
 

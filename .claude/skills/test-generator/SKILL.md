@@ -1,6 +1,6 @@
 ---
 name: test-generator
-description: Given an endpoint URL, method, response fields, generates a complete pytest test file with fixtures, parametrize, markers, positive and negative tests.
+description: Given an endpoint URL, method, response fields, write a complete pytest test file with fixtures, parametrize, markers, positive and negative tests. One test-generator per URL/method.response fields. The caller fans out the work and each instance should handle one test file generation independently.
 ---
 
 Generate a complete pytest test file for this endpoint specification:
@@ -30,7 +30,7 @@ Derive `<resource>` from the primary noun in the endpoint path (e.g. `/name/{cou
 ## File structure to generate
 
 ### Imports (RULE-STY-004)
-stdlib → third-party → local, blank-line separated. Always include `allure`, `pytest`, `Environment` and `resolve_environment` from `environment_config`. Add `json` and `pathlib.Path` if the test is parametrized.
+stdlib → third-party → local, blank-line separated. Always include `allure`, `pytest`, `Environment` and `resolve_environment` from `utils.environment_config`. Add `json` and `pathlib.Path` if the test is parametrized.
 
 ### Module marker (RULE-ALL-001)
 ```python

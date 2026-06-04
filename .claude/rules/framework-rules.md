@@ -62,7 +62,7 @@ def test_something(http_client):
 
 **Good Example**:
 ```python
-from environment_config import resolve_environment
+from utils.environment_config import resolve_environment
 
 @pytest.fixture(scope="module")
 def environment(request):

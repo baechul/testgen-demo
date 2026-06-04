@@ -36,7 +36,7 @@ This is an **integration test suite** for two public REST APIs:
 
 ### Configuration flow
 
-`config/environments.yaml` → `environment_config.py` (`resolve_environment(name) -> Environment`) → per-test-file `environment` fixture → `http_client` fixture (in `conftest.py`).
+`config/environments.yaml` → `src/utils/environment_config.py` (`resolve_environment(name) -> Environment`) → per-test-file `environment` fixture → `http_client` fixture (in `conftest.py`).
 
 All environment-specific values (`base_url`, `max_response_time`, `min_results_count`) live exclusively in `config/environments.yaml`. Test code reads them only through the `Environment` dataclass — never hardcoded.
 

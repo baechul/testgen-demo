@@ -4,7 +4,7 @@ from pathlib import Path
 import allure
 import pytest
 
-from environment_config import Environment, resolve_environment
+from utils.environment_config import Environment, resolve_environment
 
 pytestmark = allure.feature("Countries API")
 

@@ -34,13 +34,13 @@ from pathlib import Path
 import allure
 import pytest
 
-from environment_config import resolve_environment
+from utils.environment_config import resolve_environment
 ```
 
 **Bad Example**:
 ```python
 from main import build_url  # importing application logic into a test file
-from environment_config import resolve_environment
+from utils.environment_config import resolve_environment
 ```
 
 **Exceptions**: None for integration tests. If unit tests for application logic are added in the future, a separate `tests/unit/` directory should be created with its own import rules.
@@ -135,14 +135,14 @@ from pathlib import Path
 import allure
 import pytest
 
-from environment_config import resolve_environment
+from utils.environment_config import resolve_environment
 ```
 
 **Bad Example**:
 ```python
 import pytest
 import json
-from environment_config import resolve_environment
+from utils.environment_config import resolve_environment
 import allure
 from pathlib import Path
 ```
