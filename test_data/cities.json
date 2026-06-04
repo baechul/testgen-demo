@@ -1,0 +1,7 @@
+[
+  { "name": "Seoul", "country": "South Korea", "latitude": 37.5665, "longitude": 126.978 },
+  { "name": "Tokyo", "country": "Japan", "latitude": 35.6762, "longitude": 139.6503 },
+  { "name": "Berlin", "country": "Germany", "latitude": 52.52, "longitude": 13.405 },
+  { "name": "New York", "country": "United States", "latitude": 40.7128, "longitude": -74.006 },
+  { "name": "São Paulo", "country": "Brazil", "latitude": -23.5505, "longitude": -46.6333 }
+]
