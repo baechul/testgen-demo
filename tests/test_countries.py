@@ -1,10 +1,8 @@
 import allure
 import pytest
-
 from environment_config import Environment, resolve_environment
 
 pytestmark = allure.feature("Countries API")
-
 
 @pytest.fixture(scope="module")
 def environment(request: pytest.FixtureRequest) -> Environment:
@@ -12,7 +10,6 @@ def environment(request: pytest.FixtureRequest) -> Environment:
     if env_option and env_option != "countries":
         pytest.skip(f"--env {env_option} selected; skipping countries tests")
     return resolve_environment("countries")
-
 
 def test_germany_schema(http_client, environment):
     response = http_client.get("/name/germany")
@@ -28,7 +25,6 @@ def test_germany_schema(http_client, environment):
     assert "population" in country
     assert "currencies" in country
     assert "languages" in country
-
 
 def test_name_search_appears_in_region(http_client, environment):
     name_resp = http_client.get("/name/germany")
@@ -49,7 +45,6 @@ def test_name_search_appears_in_region(http_client, environment):
         f"{germany_name!r} not found in /region/europe response "
         f"({len(region_names)} countries returned)"
     )
-
 
 def test_region_europe_result_count(http_client, environment):
     response = http_client.get("/region/europe")
