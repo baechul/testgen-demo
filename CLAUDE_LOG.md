@@ -2,6 +2,57 @@
 
 ---
 
+## 2026-06-05 — framework extensibility review
+
+**Objective:** Identify structural gaps that would block or complicate adding new environments, authenticated APIs, or shared helpers.
+
+**Duration:** ~5 min
+
+**Actions Taken:**
+- No files modified — read-only review; findings logged here for tracking.
+
+**Findings:**
+
+### 1. `Environment` dataclass has no escape hatch for extra fields
+`environment_config.py:13-17` — the dataclass is `frozen=True` with exactly four fields. Adding an authenticated API (Bearer token, API key header) requires changing the dataclass, the loader, and every call site. There's no `extra: dict` field or optional `headers` map for per-environment overrides.
+
+### 2. `http_client` can't inject per-environment auth
+`conftest.py:29-33` — the client is built with only `base_url` and `timeout`. No hook exists to pass custom headers, auth handlers, or query-param defaults from `Environment`. A new environment that needs `Authorization: Bearer ...` forces a change to shared `conftest.py`.
+
+### 3. `--env` is single exact-match only
+`conftest.py:14-19` — the option accepts one string. "Run all except weather" or "run countries and currency" is impossible without hacking pytest node IDs. The skip logic in each test file (`if env_option and env_option != "countries"`) would also need to change for multi-value support.
+
+### 4. `load_environments()` re-parses YAML on every call
+`environment_config.py:20-28` — no caching. Currently called once per test file (4x total) via `scope="module"`. Harmless now; at 20+ test files with `scope="function"` fixtures, it parses the same file hundreds of times. A `@functools.lru_cache` on `load_environments` would fix it at zero cost.
+
+### 5. `BaseValidator` can't validate list elements
+`base_validator.py:5-6` — `REQUIRED_FIELDS` maps field names to types, so `"timezones": list` passes even if the list contains integers or is `[None]`. There's no `LIST_ITEM_TYPE` or element-validator hook. `CurrencyCountryValidator` has this gap: `timezones` is marked required as `list` but its contents are never checked.
+
+### 6. `min_results_count` is per-environment, not per-endpoint
+`environment_config.py:17` — a single scalar covers the whole environment. `/region/europe` needs `>40`, `/name/germany` needs `>=1` — these are currently hardcoded in individual tests rather than expressed in config, which partially violates RULE-CFG-001. There's no per-endpoint threshold table in `environments.yaml`.
+
+### 7. `tests/helpers/` doesn't exist yet
+RULE-STY-009 names it as the home for shared assertion helpers, but the directory is absent. The response-time assertion (`assert response.elapsed.total_seconds() < environment.max_response_time`) is repeated inline in every test. One place to change it doesn't exist yet.
+
+### 8. `CONFIG_PATH` is fragile to file moves
+`environment_config.py:9` — `Path(__file__).resolve().parent.parent.parent / "config" / "environments.yaml"` counts three `parent` hops, which silently breaks if `environment_config.py` is ever moved. An explicit anchor from the project root (e.g., resolved via a `pyproject.toml` marker) would be more robust.
+
+**Summary by risk:**
+
+| Gap | Breaks on | Effort to fix |
+|-----|-----------|---------------|
+| No auth support in `Environment`/`http_client` | Adding any authenticated API | Medium |
+| `--env` single-value only | 3rd environment added | Small |
+| No YAML caching | Scale (20+ test files) | Trivial |
+| No list-element validation in `BaseValidator` | Any list field with typed elements | Small |
+| `min_results_count` per-environment not per-endpoint | Endpoints with divergent count contracts | Medium |
+| No `tests/helpers/` | First shared assertion helper needed | Trivial |
+| Fragile `CONFIG_PATH` | Module moved | Small |
+
+**Next Steps:** None required immediately — gaps are low-risk at current scale. Address auth support and `--env` multi-value if a third environment is added.
+
+---
+
 ## 2026-06-05 — edge case audit via testqa agent
 
 **Objective:** Identify uncovered edge cases across the full test suite (real gaps + speculative case).

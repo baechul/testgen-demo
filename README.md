@@ -151,6 +151,51 @@ Three rule files govern the codebase and are enforced during code generation:
 - `testing-standards.md` — assertion ordering, schema coverage, parametrization, cross-endpoint consistency
 - `code-style.md` — type annotations, import ordering, naming conventions, assertion messages
 
+## Interpreting results
+
+### Terminal output
+
+pytest prints one line per test. Each line ends with `PASSED`, `FAILED`, `ERROR`, or `SKIPPED`.
+
+- `FAILED` — the assertion fired; the failure message is printed immediately below the test name. Validator failures list every broken field at once:
+  ```
+  AssertionError: Validation failed:
+    - Missing required field: 'capital'
+    - Field 'population': expected int, got str
+  ```
+- `SKIPPED` — the test's environment was excluded by `--env`. Skips do not count against the pass rate.
+- `ERROR` — a fixture or setup step raised an exception before the test body ran (e.g. network unreachable, YAML misconfigured).
+
+### Test name conventions
+
+Test names follow `test_<subject>_<check>` or `test_<subject>_<condition>_<expected>` (RULE-STY-006), so the name alone identifies the failure layer:
+
+| Suffix / pattern | What it checks |
+|---|---|
+| `_schema` | All required fields are present and correctly typed |
+| `_result_count` | Collection endpoint returns at least the expected minimum |
+| `_appears_in_region` | Cross-endpoint consistency — entity from narrow endpoint is in collection |
+| `_returns_404` | Negative path — invalid input produces the correct error status |
+| `_in_valid_range` | Domain constraint — numeric field is within its physical/business bounds |
+
+### Allure report
+
+After `make report-open`, the **Behaviors** tab groups tests by API (`Countries API`, `Weather API`). Expand a failing feature to see the individual test, its parameters (for parametrized cases), and the full assertion message.
+
+The **Timeline** tab shows wall-clock execution order — useful for spotting intermittent latency failures where response time exceeded `max_response_time`.
+
+### CI quality gate
+
+The GitHub Actions workflow enforces `PASS_RATE_THRESHOLD=100`. The gate computes:
+
+```
+pass rate = passed / (total - skipped) * 100
+```
+
+If the rate falls below the threshold, the `Quality gate` step exits non-zero and the job fails. The full breakdown (`total`, `passed`, `failed`, `skipped`, `pass rate`) is printed to the step log and written to the GitHub job summary.
+
+---
+
 ## Design decisions
 
 **Per-environment fixtures in each test file** — each test file owns a module-scoped `environment` fixture that resolves its own environment name and skips if `--env` targets a different one. When `--env` is omitted, all files run.
