@@ -1,6 +1,6 @@
 # testgen-demo
 
-Integration test suite for public REST APIs, with Allure reporting.
+Integration test suite for public REST APIs, with Allure reporting and Claude Code automation for test generation.
 
 ## APIs under test
 
@@ -38,6 +38,12 @@ uv run pytest --env countries tests
 uv run pytest --env weather tests
 ```
 
+Run a single test by node ID:
+
+```bash
+uv run pytest tests/test_countries.py::test_germany_schema
+```
+
 ## Allure report
 
 Generate and open the report in a browser:
@@ -54,23 +60,105 @@ make report-stop
 
 `make report` generates the HTML without opening the browser.
 
-## Interpreting results
+## Test coverage
 
-The report's **Behaviors** tab has two sections — **Countries API** and **Weather API** — one per environment.
+30 tests across 4 files (as of last update):
 
-Each test enforces:
+| File | Endpoints | Tests |
+|---|---|---|
+| `tests/test_countries.py` | `/name/{name}`, `/region/{region}` | schema, result count, cross-endpoint consistency, Americas area/population domain checks |
+| `tests/test_currency.py` | `/currency/{code}` | schema, result count, timezone format, languages/region presence, cross-endpoint consistency, 404 negative path |
+| `tests/test_lang.py` | `/lang/{code}` | parametrized schema + result count (Korean, Spanish, French, Japanese), cross-endpoint region consistency, 404 negative path |
+| `tests/test_weather.py` | `/forecast` | parametrized schema across 5 cities (Seoul, Tokyo, Berlin, New York, São Paulo) |
 
-- **Status 200** — the endpoint responded successfully.
-- **Response time** — must be under the `max_response_time` threshold defined in `config/environments.yaml`. No value is hardcoded in test code.
-- **Schema** — required fields are present in the response body.
-- **Data integrity** — e.g. temperature values fall within the physically plausible range of −80 °C to 60 °C.
+## Project layout
+
+```
+config/
+  environments.yaml       # base_url, max_response_time, min_results_count per env
+src/
+  utils/
+    environment_config.py # resolve_environment(name) → Environment dataclass
+  validators/
+    base_validator.py     # BaseValidator with REQUIRED_FIELDS / OPTIONAL_FIELDS / assert_valid()
+    country_validator.py  # CountryValidator + NameValidator (countries, lang, region endpoints)
+    currency_validator.py # CurrencyCountryValidator (currency endpoint — region/timezones required)
+    forecast_validator.py # ForecastValidator + HourlyValidator (weather forecast endpoint)
+test_data/
+  cities.json             # parametrize inputs for weather tests
+  lang_inputs.json        # parametrize inputs for lang tests
+tests/
+  test_countries.py
+  test_currency.py
+  test_lang.py
+  test_weather.py
+docs/
+  test-specs/
+    test-spec-countries.md  # living spec: scenarios, implementation status, coverage gaps
+    test-spec-weather.md
+conftest.py               # --env CLI option + http_client fixture
+```
+
+## Validators
+
+`src/validators/` contains typed validator classes that replace verbose `assert "field" in data` / `isinstance` chains in tests. Each class exposes:
+
+- `REQUIRED_FIELDS` — field name → expected Python type; fails if missing or wrong type
+- `OPTIONAL_FIELDS` — same but skipped if the field is absent or `null`
+- `validate(data) -> list[str]` — returns all errors; empty list means valid
+- `assert_valid(data) -> None` — raises `AssertionError` with all errors if any fail
+
+All validators extend `BaseValidator`. Nested object fields get their own validator class (e.g., `NameValidator` for `country.name`).
+
+Usage in a test:
+
+```python
+from validators.currency_validator import CurrencyCountryValidator
+
+def test_currency_usd_schema(http_client, environment):
+    response = http_client.get("/currency/USD")
+    assert response.elapsed.total_seconds() < environment.max_response_time
+    assert response.status_code == 200
+    results = response.json()
+    assert isinstance(results, list) and len(results) > 0
+    CurrencyCountryValidator.assert_valid(results[0])
+```
+
+## Claude Code automation
+
+This project uses Claude Code agents and skills to generate, verify, and document tests.
+
+### Agents (`.claude/agents/`)
+
+| Agent | Trigger | What it does |
+|---|---|---|
+| `testgen` | `@testgen` | Generates a complete test file for a given endpoint, then delegates to `testrun` |
+| `testrun` | `@testrun` | Executes pytest, analyzes failures, reports pass/fail |
+| `testqa` | `@testqa` | Syncs `docs/test-specs/` with actual test implementations; reports drift and gaps |
+
+### Skills (`.claude/skills/`)
+
+| Skill | Trigger | What it does |
+|---|---|---|
+| `test-generator` | `/test-generator` | Generates a pytest test file from an endpoint spec (URL, method, response fields) |
+| `validator-generator` | `/validator-generator` | Generates a typed validator class from a live API response or JSON sample |
+
+### Rules (`.claude/rules/`)
+
+Three rule files govern the codebase and are enforced during code generation:
+
+- `framework-rules.md` — fixture scoping, config loading, CI wiring, `--env` selector
+- `testing-standards.md` — assertion ordering, schema coverage, parametrization, cross-endpoint consistency
+- `code-style.md` — type annotations, import ordering, naming conventions, assertion messages
 
 ## Design decisions
 
-**Per-environment fixtures in each test file** — each test file owns a module-scoped `environment` fixture that always resolves its own environment. When `--env` is passed it skips mismatched suites; when omitted both suites run. This avoids a global session fixture that requires `--env` to be present.
+**Per-environment fixtures in each test file** — each test file owns a module-scoped `environment` fixture that resolves its own environment name and skips if `--env` targets a different one. When `--env` is omitted, all files run.
 
-**Thresholds in config, not in tests** — `config/environments.yaml` is the single source of truth for `max_response_time` and `min_results_count`. Tests read these values from the `environment` fixture so changing a threshold never requires touching test code.
+**Thresholds in config, not in tests** — `config/environments.yaml` is the single source of truth for `max_response_time` and `min_results_count`. Changing a threshold never requires touching test code.
 
-**Cities loaded from `test_data/cities.json`** — parametrized weather tests read city coordinates from a JSON fixture file rather than embedding them in the test. Adding or removing a city requires no code change.
+**Response-time assertion first** — every test asserts `elapsed < environment.max_response_time` immediately after the HTTP call, before status code or body checks. Performance regressions are surfaced at the same level as functional failures.
 
-**`allure.feature` as `pytestmark`** — applying the Allure feature marker at module level keeps individual tests free of decorator boilerplate while still producing separate sections in the report.
+**Test data in `test_data/`** — parametrized tests load structured inputs (cities, languages) from JSON files at module scope. Adding a case requires no code change.
+
+**Typed validators over inline assertions** — `src/validators/` classes consolidate field-presence and type checks. A single `Validator.assert_valid(record)` replaces a block of `assert "field" in data` lines and produces a unified failure message listing all errors at once.
