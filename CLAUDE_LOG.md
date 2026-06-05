@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-06-04 — validator-generator: CurrencyCountryValidator for test_currency.py
+
+**Objective:** Generate a typed validator for the `/currency/USD` response shape and replace manual `assert "field" in country` / `isinstance` chains in `test_currency_usd_schema` with `CurrencyCountryValidator.assert_valid()`.
+
+**Duration:** ~2 min
+
+**Actions Taken:**
+- `src/validators/currency_validator.py` — created; `CurrencyCountryValidator` extends `BaseValidator`, delegates `name` nesting to existing `NameValidator`; distinguishes from `CountryValidator` by making `region` and `timezones` REQUIRED (they are optional in `CountryValidator` but asserted as required by the `/currency/` test suite)
+- `tests/test_currency.py` — added import of `CurrencyCountryValidator`; replaced 12 lines of manual field/type assertions in `test_currency_usd_schema` with a single `CurrencyCountryValidator.assert_valid(results[0])` call
+
+**Testrun result:** 7/7 passed (3.24s)
+
+---
+
 ## 2026-06-04 — testgen (GET /currency/USD, GET /region/Americas) + testqa spec sync
 
 **Objective:** Generate integration tests for two new Countries API endpoints — `GET /currency/USD` (fields: region, timezones, languages) and `GET /region/Americas` (fields: area, population) — verify them with testrun, and synchronize test spec files with testqa. All three agent tasks ran in parallel.

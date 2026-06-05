@@ -6,6 +6,7 @@ import allure
 import pytest
 
 from utils.environment_config import Environment, resolve_environment
+from validators.currency_validator import CurrencyCountryValidator
 
 pytestmark = allure.feature("Countries API")
 
@@ -26,25 +27,7 @@ def test_currency_usd_schema(http_client: "httpx.Client", environment: Environme
     results = response.json()
     assert isinstance(results, list) and len(results) > 0
 
-    country = results[0]
-    # Required structural fields per endpoint contract
-    assert "name" in country
-    assert "region" in country
-    assert "timezones" in country
-    assert "languages" in country
-    assert "currencies" in country
-
-    # Validate nested name shape
-    name = country["name"]
-    assert isinstance(name, dict), "name must be a dict"
-    assert "common" in name, "name.common is required"
-    assert "official" in name, "name.official is required"
-
-    # Validate field types
-    assert isinstance(country["region"], str), "region must be a string"
-    assert isinstance(country["timezones"], list), "timezones must be a list"
-    assert isinstance(country["languages"], dict), "languages must be a dict"
-    assert isinstance(country["currencies"], dict), "currencies must be a dict"
+    CurrencyCountryValidator.assert_valid(results[0])
 
 
 def test_currency_usd_result_count(http_client: "httpx.Client", environment: Environment) -> None:
