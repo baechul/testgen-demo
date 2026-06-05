@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -8,13 +10,21 @@ import yaml
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "environments.yaml"
 
-# Note that Environment is the immutable read-only dataclass once created. 
+# Note that Environment is the immutable read-only dataclass once created.
 @dataclass(frozen=True)
 class Environment:
     name: str
     base_url: str
     max_response_time: float
     min_results_count: int
+    headers: dict[str, str] = field(default_factory=dict)
+
+
+def _expand_env_vars(headers: dict[str, str]) -> dict[str, str]:
+    return {
+        k: re.sub(r"\$\{(\w+)\}", lambda m: os.environ.get(m.group(1), m.group(0)), v)
+        for k, v in headers.items()
+    }
 
 
 def load_environments() -> dict[str, dict[str, Any]]:
@@ -51,9 +61,11 @@ def resolve_environment(name: str) -> Environment:
         msg = f"Environment {name!r} is missing keys: {', '.join(missing)}"
         raise ValueError(msg)
 
+    raw_headers = entry.get("headers") or {}
     return Environment(
         name=name,
         base_url=str(entry["base_url"]),
         max_response_time=float(entry["max_response_time"]),
         min_results_count=int(entry["min_results_count"]),
+        headers=_expand_env_vars(raw_headers),
     )

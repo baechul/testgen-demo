@@ -2,6 +2,9 @@ countries:
   base_url: https://restcountries.com/v3.1
   max_response_time: 2.0
   min_results_count: 1
+  # headers:     # Example — authenticated environment     
+  #   Authorization: "Bearer ${API_TOKEN}"
+  #   X-Api-Key: "some-opaque-key"
 
 weather:
   base_url: https://api.open-meteo.com/v1

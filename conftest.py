@@ -29,5 +29,6 @@ def http_client(environment: Environment) -> Iterator[httpx.Client]:
     with httpx.Client(
         base_url=environment.base_url,
         timeout=environment.max_response_time,
+        headers=environment.headers,
     ) as client:
         yield client
