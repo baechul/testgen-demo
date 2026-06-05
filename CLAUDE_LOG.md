@@ -2,6 +2,39 @@
 
 ---
 
+## 2026-06-05 — edge case audit via testqa agent
+
+**Objective:** Identify uncovered edge cases across the full test suite (real gaps + at least one hallucinated/speculative case).
+
+**Duration:** ~1 min
+
+**Actions Taken:**
+- No files modified — read-only audit; results logged here for tracking.
+
+**Edge Cases Identified:**
+
+| Edge Case | Endpoint | Suggested Test Name |
+|-----------|----------|---------------------|
+| Invalid country name returns 404 or empty | `GET /name/{name}` | `test_name_nonexistent_returns_empty_or_404` |
+| Invalid region param returns 404 or empty | `GET /region/{region}` | `test_region_invalid_returns_empty_or_404` |
+| Case-insensitive name search (`GERMANY` vs `germany`) | `GET /name/{name}` | `test_name_search_case_insensitive_returns_same_result` |
+| Multi-word / diacritic country names (`Côte d'Ivoire`) | `GET /name/{name}` | `test_name_search_with_special_characters_found` |
+| Missing `latitude`/`longitude` returns 400 | `GET /forecast` | `test_forecast_missing_latitude_returns_400` |
+| Extreme coordinate boundaries (±90°, ±180°) | `GET /forecast` | `test_forecast_extreme_latitude_poles_succeeds` |
+| `forecast_days` param variations (1, 90, -1) | `GET /forecast` | `test_forecast_with_extended_horizon_returns_more_data` |
+| `null` / absent optional country fields (`area`, `flag`) | `GET /name/{name}` | `test_region_with_missing_optional_fields_validates` |
+| `temperature_2m` array length not asserted | `GET /forecast` | `test_forecast_hourly_temperature_array_has_expected_length` |
+| Timezone vs coordinates cross-field consistency | `GET /forecast` | `test_forecast_timezone_matches_coordinates` |
+| *(Speculative)* Disputed territory with empty `capital` array | `GET /name/{name}` | `test_disputed_territory_with_empty_capital_validates` |
+| *(Speculative)* Territory with no official `languages` dict | `GET /name/{name}` | `test_territory_with_no_official_language_validates` |
+| *(Speculative)* Rate limit returns 200 with truncated hourly array | `GET /forecast` | `test_forecast_under_rate_limit_returns_partial_data_or_429` |
+| *(Speculative)* `name.nativeName` / `name.translations` fields not validated | `GET /name/{name}` | `test_country_schema_allows_additional_name_fields` |
+| *(Speculative)* `daily` + `hourly` params in same request | `GET /forecast` | `test_forecast_with_daily_and_hourly_parameters_validates` |
+
+**Next Steps:** Implement P1 real gaps: cases 1–6 (error-path and boundary tests).
+
+---
+
 ## 2026-06-04 — validator-generator: CurrencyCountryValidator for test_currency.py
 
 **Objective:** Generate a typed validator for the `/currency/USD` response shape and replace manual `assert "field" in country` / `isinstance` chains in `test_currency_usd_schema` with `CurrencyCountryValidator.assert_valid()`.
