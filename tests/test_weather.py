@@ -3,6 +3,7 @@ import allure
 import pytest
 from pathlib import Path
 from utils.environment_config import Environment, resolve_environment
+from validators.forecast_validator import ForecastValidator
 
 pytestmark = allure.feature("Weather API")
 
@@ -30,14 +31,4 @@ def test_forecast_schema(http_client, environment, city):
     assert response.elapsed.total_seconds() < environment.max_response_time
     assert response.status_code == 200
 
-    data = response.json()
-    
-    assert "timezone" in data
-
-    temperatures = data["hourly"]["temperature_2m"]
-    assert len(temperatures) > 0
-    # -80°C (Antarctic record low) to 60°C (documented surface maximum)
-    assert all(-80 <= t <= 60 for t in temperatures), (
-        f"Temperature out of valid range [-80, 60]: "
-        f"{[t for t in temperatures if not (-80 <= t <= 60)]}"
-    )
+    ForecastValidator.assert_valid(response.json())

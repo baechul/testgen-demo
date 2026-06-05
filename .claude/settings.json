@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "changed=$(git diff --name-only HEAD 2>/dev/null; git diff --name-only --cached 2>/dev/null); if echo \"$changed\" | grep -qE '^(src/|tests/|conftest\\.py|config/|\\.claude/|\\.github/|pyproject\\.toml|Makefile)'; then if ! echo \"$changed\" | grep -q 'CLAUDE_LOG\\.md'; then echo '{\"systemMessage\": \"WARNING: Repo files changed but CLAUDE_LOG.md was not updated. Add a log entry before finishing.\"}'; fi; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

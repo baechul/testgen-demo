@@ -5,6 +5,7 @@ import allure
 import pytest
 
 from utils.environment_config import Environment, resolve_environment
+from validators.country_validator import CountryValidator
 
 pytestmark = allure.feature("Countries API")
 
@@ -29,8 +30,7 @@ def test_lang_schema(http_client, environment, lang):
     assert response.status_code == 200
     results = response.json()
     assert isinstance(results, list) and len(results) > 0
-    country = results[0]
-    assert "status" in country
+    CountryValidator.assert_valid(results[0])
 
 
 @pytest.mark.parametrize("lang", LANGUAGES, ids=[l["name"] for l in LANGUAGES])

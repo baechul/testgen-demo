@@ -1,6 +1,7 @@
 import allure
 import pytest
 from utils.environment_config import Environment, resolve_environment
+from validators.country_validator import CountryValidator
 
 pytestmark = allure.feature("Countries API")
 
@@ -19,12 +20,7 @@ def test_germany_schema(http_client, environment):
     results = response.json()
     assert isinstance(results, list) and len(results) > 0
 
-    country = results[0]
-    assert "name" in country
-    assert "capital" in country
-    assert "population" in country
-    assert "currencies" in country
-    assert "languages" in country
+    CountryValidator.assert_valid(results[0])
 
 def test_name_search_appears_in_region(http_client, environment):
     name_resp = http_client.get("/name/germany")
