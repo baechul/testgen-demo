@@ -31,8 +31,6 @@
 | *(Speculative)* `name.nativeName` / `name.translations` fields not validated | `GET /name/{name}` | `test_country_schema_allows_additional_name_fields` |
 | *(Speculative)* `daily` + `hourly` params in same request | `GET /forecast` | `test_forecast_with_daily_and_hourly_parameters_validates` |
 
-**Next Steps:** Implement P1 real gaps: cases 1–6 (error-path and boundary tests).
-
 ---
 
 ## 2026-06-04 — validator-generator: CurrencyCountryValidator for test_currency.py
