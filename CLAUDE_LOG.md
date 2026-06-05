@@ -2,6 +2,45 @@
 
 ---
 
+## 2026-06-04 — testgen (GET /currency/USD, GET /region/Americas) + testqa spec sync
+
+**Objective:** Generate integration tests for two new Countries API endpoints — `GET /currency/USD` (fields: region, timezones, languages) and `GET /region/Americas` (fields: area, population) — verify them with testrun, and synchronize test spec files with testqa. All three agent tasks ran in parallel.
+
+**Duration:** ~3 min (parallel execution)
+
+**Actions Taken:**
+- `tests/test_currency.py` — created; 7 tests: `test_currency_usd_schema`, `test_currency_usd_result_count`, `test_currency_usd_timezones_valid_format`, `test_currency_usd_languages_non_empty`, `test_currency_usd_region_non_empty`, `test_currency_usd_country_appears_in_region` (RULE-CROSS-001), `test_currency_usd_not_found_returns_404`
+- `tests/test_countries.py` — modified; added 4 tests for `GET /region/americas`: `test_region_americas_schema`, `test_region_americas_result_count`, `test_region_americas_area_in_valid_range`, `test_region_americas_population_in_valid_range`
+- `docs/test-specs/test-spec-countries.md` — created by testqa; documents 6 scenarios (3 implemented, 3 missing); identifies P1 gaps (error-path tests, case-sensitivity) and P2 gaps
+- `docs/test-specs/test-spec-weather.md` — created by testqa; documents 8 scenarios (1 unique parametrized test covering 5 cities); identifies P1 gaps (missing-param 400 tests, temperature domain range) and P2 gaps
+
+**Testrun result:** 30/30 passed (0 failed, 0 skipped) across all 4 test files (~16s)
+
+**Next Steps:**
+- Implement P1 gap: error-path tests for invalid query params on Countries API (TC-COUNTRIES-002, TC-COUNTRIES-006)
+- Implement P1 gap: missing-required-parameter tests for Weather API returning 400 (TC-WEATHER-006, TC-WEATHER-007)
+- Implement P1 gap: temperature domain range check in test_weather.py (RULE-DOMAIN-001, TC-WEATHER-008)
+
+---
+
+### [testrun] Full suite — 2026-06-04T(continued session)
+- **Duration**: ~16s
+- **Command**: `uv run pytest tests -v`
+- **Result**: 30 passed / 0 failed / 0 skipped
+- **Pass rate**: 100%
+- **Outcome**: green
+
+---
+
+### [testgen] Full suite verification — 2026-06-04T00:00:00Z
+- **Duration**: ~30s
+- **Target files**: tests/test_countries.py, tests/test_currency.py, tests/test_lang.py, tests/test_weather.py
+- **Endpoints handled**: /name/{country}, /region/{region}, /currency/{code}, /lang/{code}, /forecast
+- **Tests verified**: 30 total — schema (5), count (4), domain (3), parametrized (9), cross-endpoint (4), negative (2), content (3)
+- **Outcome**: passed (30/30)
+
+---
+
 ### [testrun] Parallel execution summary — 2026-06-05T04:04:00Z
 | Instance  | Target             | Duration | Result        | Outcome |
 |-----------|--------------------|----------|---------------|---------|

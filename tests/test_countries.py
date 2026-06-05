@@ -50,3 +50,63 @@ def test_region_europe_result_count(http_client, environment):
     results = response.json()
     assert isinstance(results, list)
     assert len(results) > 40  # Europe has >40 regions; conservative lower bound
+
+
+def test_region_americas_schema(http_client, environment):
+    response = http_client.get("/region/americas")
+    assert response.elapsed.total_seconds() < environment.max_response_time
+    assert response.status_code == 200
+
+    results = response.json()
+    assert isinstance(results, list) and len(results) > 0
+
+    country = results[0]
+    assert "area" in country
+    assert "population" in country
+
+
+def test_region_americas_result_count(http_client, environment):
+    response = http_client.get("/region/americas")
+    assert response.elapsed.total_seconds() < environment.max_response_time
+    assert response.status_code == 200
+
+    results = response.json()
+    assert isinstance(results, list)
+    assert len(results) > 30  # Americas has >30 sovereign states; conservative lower bound
+
+
+def test_region_americas_area_in_valid_range(http_client, environment):
+    response = http_client.get("/region/americas")
+    assert response.elapsed.total_seconds() < environment.max_response_time
+    assert response.status_code == 200
+
+    results = response.json()
+    assert isinstance(results, list) and len(results) > 0
+
+    # Filter to entries that report an area value (some territories omit the field or return None)
+    areas = [c["area"] for c in results if c.get("area") is not None]
+    assert len(areas) > 0, "No countries in /region/americas returned an area value"
+
+    # Area must be strictly positive — even the smallest territory (e.g. Saint Kitts ~261 km²) has area > 0
+    out_of_range = [a for a in areas if not (a > 0)]
+    assert len(out_of_range) == 0, (
+        f"area values <= 0 found in /region/americas response: {out_of_range}"
+    )
+
+
+def test_region_americas_population_in_valid_range(http_client, environment):
+    response = http_client.get("/region/americas")
+    assert response.elapsed.total_seconds() < environment.max_response_time
+    assert response.status_code == 200
+
+    results = response.json()
+    assert isinstance(results, list) and len(results) > 0
+
+    populations = [c["population"] for c in results if c.get("population") is not None]
+    assert len(populations) > 0, "No countries in /region/americas returned a population value"
+
+    # Population must be >= 0; some territories have 0 permanent residents but none can be negative
+    out_of_range = [p for p in populations if not (p >= 0)]
+    assert len(out_of_range) == 0, (
+        f"population values < 0 found in /region/americas response: {out_of_range}"
+    )
