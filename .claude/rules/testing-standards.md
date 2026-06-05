@@ -1,6 +1,6 @@
 # Testing Standards
 
-**Version**: 1.1
+**Version**: 1.2
 **Last Updated**: 2026-06-04
 **Owner**: Baechul Kim
 
@@ -344,3 +344,49 @@ def test_region_europe(http_client, environment):
 ```
 
 **Exceptions**: Endpoints whose result count is legitimately variable or unbounded (e.g., search endpoints with user-supplied queries) should use `environment.min_results_count` rather than a hardcoded constant.
+
+---
+
+### RULE-VAL-001: Response payload validation must use a typed validator class from `src/validators/`
+
+**Severity**: REQUIRED
+
+**Rationale**: Scattered `assert "field" in response` checks across test functions are fragile and inconsistent — each test rediscovers and re-asserts the same contract independently, so a field rename breaks tests in many places and a new required field is silently skipped unless every test is updated. A dedicated validator class centralizes the contract, makes it reviewable as a first-class artifact, and gives a single place to update when the API schema evolves.
+
+**Rule**: All response payload validation (field presence, type checks, nested structure) must be delegated to a typed validator class located under `src/validators/`. Test functions call the validator and assert its return value; they do not perform inline `assert "field" in data` checks for fields covered by the validator.
+
+If a validator for an endpoint does not yet exist, use the `/validator-generator` skill to generate it before writing or reviewing tests for that endpoint.
+
+**Good Example**:
+```python
+# src/validators/country_validator.py (generated via /validator-generator)
+class CountryValidator:
+    def validate(self, data: dict) -> bool:
+        required = {"name", "capital", "population", "currencies", "languages"}
+        return all(field in data for field in required)
+
+# tests/test_countries.py
+from src.validators.country_validator import CountryValidator
+
+def test_germany_schema(http_client, environment):
+    response = http_client.get("/name/germany")
+    assert response.elapsed.total_seconds() < environment.max_response_time
+    assert response.status_code == 200
+    country = response.json()[0]
+    assert CountryValidator().validate(country), f"Schema validation failed: {country}"
+```
+
+**Bad Example**:
+```python
+def test_germany_schema(http_client, environment):
+    response = http_client.get("/name/germany")
+    assert response.status_code == 200
+    country = response.json()[0]
+    assert "name" in country        # inline field checks scattered across tests
+    assert "capital" in country
+    assert "population" in country
+    assert "currencies" in country
+    assert "languages" in country
+```
+
+**Exceptions**: Single-field spot checks added for a specific edge case (e.g., asserting a newly-discovered optional field) may be inline until a validator update is made. The validator must be updated in the same PR.
