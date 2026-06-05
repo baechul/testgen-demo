@@ -4,7 +4,7 @@
 
 ## 2026-06-05 — edge case audit via testqa agent
 
-**Objective:** Identify uncovered edge cases across the full test suite (real gaps + at least one hallucinated/speculative case).
+**Objective:** Identify uncovered edge cases across the full test suite (real gaps + speculative case).
 
 **Duration:** ~1 min
 
