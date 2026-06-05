@@ -12,7 +12,7 @@ These rules govern **how tests are written** in the `testgen-demo` integration t
 
 Rules marked **REQUIRED** are non-negotiable; violations must be corrected before a PR is merged. Rules marked **RECOMMENDED** represent strong defaults; deviations require a comment explaining the exception.
 
-Rules about how Python code is written (naming conventions, type annotations, import ordering, assertion messaging, no `print()` calls) live in `code-style.md`. Rules about framework wiring live in `framework-rules.md`.
+Rules about what to test and how to structure tests live in `testing-standards.md`. Rules about framework wiring (fixture scopes, CI configuration, import boundaries between modules) live in `framework-rules.md`.
 
 ---
 
@@ -88,7 +88,7 @@ def test_germany_schema(http_client, environment):
 
 ### RULE-ASS-001: Assertion ordering within a test follows the sequence: latency, status, shape, content
 
-**Severity**: REQUIRED
+**Severity**: RECOMMENDED
 
 **Rationale**: A consistent assertion sequence means any reader can scan a test top-to-bottom and immediately understand what layer of the contract is being checked. Failures are also more informative: a latency failure at line 3 is unambiguous; a content failure at line 10 presupposes the earlier layers passed. Mixing orders forces readers to reconstruct intent from context.
 
@@ -190,7 +190,7 @@ CITIES = json.loads(
 
 ### RULE-DATA-002: Parametrize data-driven tests from files only; no inline test data
 
-**Severity**: REQUIRED
+**Severity**: RECOMMENDED
 
 **Rationale**: Inline parametrize data (dicts or values declared directly in the `@pytest.mark.parametrize` decorator) mixes test inputs with test logic and makes it impossible to extend the dataset without touching test code. Loading from `test_data/` allows QA and non-engineers to add cases without modifying Python files and keeps test data reviewable as a separate diff artifact.
 

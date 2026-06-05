@@ -8,7 +8,7 @@
 
 ## Overview
 
-These rules govern **how Python code is written** in the `testgen-demo` test suite and its supporting modules: naming conventions, type annotations, import ordering, comment policy, assertion messaging, and where shared helpers and validators live. They apply to all files under `tests/`, `conftest.py`, and project-level modules such as `environment_config.py`.
+These rules govern **how Python code is written** in the `testgen-demo` test suite and its supporting modules: naming conventions, type annotations, import ordering, comment policy, assertion messaging, and where shared helpers and validators live. They apply to all files under `tests/`, `conftest.py`, and project-level modules such as `src/utils/environment_config.py`.
 
 Rules marked **REQUIRED** are non-negotiable; violations must be corrected before a PR is merged. Rules marked **RECOMMENDED** represent strong defaults; deviations require a comment explaining the exception.
 
@@ -18,13 +18,13 @@ Rules about what to test and how to structure tests live in `testing-standards.m
 
 ## Rules
 
-### RULE-STY-001: Test files import only from the standard library, third-party packages, and `environment_config`
+### RULE-STY-001: Test files import only from the standard library, third-party packages, and `utils.environment_config`
 
 **Severity**: REQUIRED
 
-**Rationale**: The only project-internal module test files should need is `environment_config`. If a test file imports from `main.py` or other application modules, it is testing implementation details rather than the public HTTP API, which defeats the purpose of integration tests and couples the test suite to internal structure that may change independently.
+**Rationale**: The only project-internal module test files should need is `utils.environment_config`. If a test file imports from `main.py` or other application modules, it is testing implementation details rather than the public HTTP API, which defeats the purpose of integration tests and couples the test suite to internal structure that may change independently.
 
-**Rule**: In this integration test suite, test files may import from: the Python standard library, installed packages (`allure`, `pytest`, `httpx`, `json`, `pathlib`, etc.), and `environment_config`. Imports from other application modules (`main`, etc.) are forbidden in test files.
+**Rule**: In this integration test suite, test files may import from: the Python standard library, installed packages (`allure`, `pytest`, `httpx`, `json`, `pathlib`, etc.), and `utils.environment_config`. Imports from other application modules (`main`, etc.) are forbidden in test files.
 
 **Good Example**:
 ```python
@@ -79,7 +79,7 @@ assert germany_name in region_names
 
 **Rationale**: `conftest.py` demonstrates the expected standard: `http_client(environment: Environment) -> Iterator[httpx.Client]`. Type annotations on fixtures serve two purposes: they make the dependency graph self-documenting (a reader immediately knows what type each injected argument provides), and they allow static analysis tools to catch mismatches between fixture return types and the parameter types of consuming tests.
 
-**Rule**: Every fixture function must annotate all parameters and its return type. For generator fixtures that `yield`, the return type must be `Iterator[T]` or `Generator[T, None, None]`, not bare `T`. The `Environment` type must be imported from `environment_config`, not re-declared inline.
+**Rule**: Every fixture function must annotate all parameters and its return type. For generator fixtures that `yield`, the return type must be `Iterator[T]` or `Generator[T, None, None]`, not bare `T`. The `Environment` type must be imported from `utils.environment_config`, not re-declared inline.
 
 **Good Example**:
 ```python
@@ -87,7 +87,7 @@ from collections.abc import Iterator
 
 import httpx
 
-from environment_config import Environment
+from utils.environment_config import Environment
 
 
 @pytest.fixture
@@ -111,17 +111,17 @@ def http_client(environment):  # missing type annotations
 
 ---
 
-### RULE-STY-004: Imports must follow stdlib → third-party → local ordering with blank-line separation
+### RULE-STY-004: Imports follow stdlib → third-party → local ordering with blank-line separation
 
-**Severity**: REQUIRED
+**Severity**: RECOMMENDED
 
-**Rationale**: Consistent import ordering is a prerequisite for readable diffs and automated linting. The project's existing files (`test_weather.py`, `conftest.py`, `environment_config.py`) already follow the isort/ruff standard. Deviations introduce unnecessary noise in code review.
+**Rationale**: Consistent import ordering is a prerequisite for readable diffs and automated linting. The project's existing files (`test_weather.py`, `conftest.py`, `src/utils/environment_config.py`) already follow the isort/ruff standard. Deviations introduce unnecessary noise in code review.
 
-**Rule**: Imports must be grouped and ordered as follows, with exactly one blank line between groups:
+**Rule**: Imports are grouped and ordered as follows, with exactly one blank line between groups:
 1. `from __future__ import annotations` (if present, always first, alone in its group)
 2. Standard library imports (`collections`, `dataclasses`, `json`, `pathlib`, `typing`, etc.)
 3. Third-party package imports (`allure`, `httpx`, `pytest`, `yaml`, etc.)
-4. Local project imports (`environment_config`, `tests/helpers/`, etc.)
+4. Local project imports (`utils.environment_config`, `tests/helpers/`, etc.)
 
 Within each group, imports are sorted alphabetically. `from X import Y` and `import X` forms may coexist within a group; sort them together alphabetically by module name.
 
@@ -155,7 +155,7 @@ from pathlib import Path
 
 **Severity**: REQUIRED
 
-**Rationale**: Without `from __future__ import annotations`, using `collections.abc.Iterator` as a return-type annotation requires the type to be evaluated at runtime, which raises `TypeError` on Python 3.9 and below. The `from __future__ import annotations` import defers annotation evaluation, making the annotation a string and eliminating the runtime dependency. `conftest.py` and `environment_config.py` both already include this import.
+**Rationale**: Without `from __future__ import annotations`, using `collections.abc.Iterator` as a return-type annotation requires the type to be evaluated at runtime, which raises `TypeError` on Python 3.9 and below. The `from __future__ import annotations` import defers annotation evaluation, making the annotation a string and eliminating the runtime dependency. `conftest.py` and `src/utils/environment_config.py` both already include this import.
 
 **Rule**: Any file that uses `collections.abc.Iterator`, `collections.abc.Generator`, or any other generic from `collections.abc` as a type annotation must begin with `from __future__ import annotations`. Files that use only built-in generics (`list[T]`, `dict[K, V]`) or `typing` generics under a `TYPE_CHECKING` guard are exempt if the project's minimum Python version is 3.10 or higher.
 

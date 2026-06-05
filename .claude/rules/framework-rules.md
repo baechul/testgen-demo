@@ -10,7 +10,9 @@
 
 These rules govern the **structural architecture** of the `testgen-demo` integration test suite: how the framework is wired together, how environment configuration is loaded, how fixtures are scoped and composed, how the `--env` selector works, and how CI is structured. They are not concerned with how individual tests are written (those conventions live in `testing-standards.md`) or with how Python code is styled (those conventions live in `code-style.md`).
 
-Rules marked **REQUIRED** are non-negotiable; violations must be corrected before a PR is merged.
+Rules marked **REQUIRED** are non-negotiable; violations must be corrected before a PR is merged. Rules marked **RECOMMENDED** represent strong defaults; deviations require a comment explaining the exception.
+
+Rules about what to test and how to structure tests live in `testing-standards.md`. Rules about framework wiring (fixture scopes, CI configuration, import boundaries between modules) live in `framework-rules.md`.
 
 ---
 
@@ -52,13 +54,13 @@ def test_something(http_client):
 
 ---
 
-### RULE-CFG-002: `environment_config.py` is the sole loader of `config/environments.yaml`
+### RULE-CFG-002: `src/utils/environment_config.py` is the sole loader of `config/environments.yaml`
 
 **Severity**: REQUIRED
 
-**Rationale**: `environment_config.py` owns the schema contract for the YAML file: it validates required keys, coerces types, and raises clear errors on misconfiguration. Bypassing it by calling `yaml.safe_load` directly in test code circumvents that validation and duplicates parsing logic.
+**Rationale**: `src/utils/environment_config.py` owns the schema contract for the YAML file: it validates required keys, coerces types, and raises clear errors on misconfiguration. Bypassing it by calling `yaml.safe_load` directly in test code circumvents that validation and duplicates parsing logic.
 
-**Rule**: Test files and fixtures must use `resolve_environment(name)` from `environment_config` to obtain an `Environment` dataclass. Direct `yaml` parsing in test modules is forbidden.
+**Rule**: Test files and fixtures must use `resolve_environment(name)` from `utils.environment_config` to obtain an `Environment` dataclass. Direct `yaml` parsing in test modules is forbidden.
 
 **Good Example**:
 ```python
@@ -79,7 +81,7 @@ def environment():
         return yaml.safe_load(f)["countries"]
 ```
 
-**Exceptions**: None. The only legitimate direct consumer of `config/environments.yaml` is `environment_config.py` itself.
+**Exceptions**: None. The only legitimate direct consumer of `config/environments.yaml` is `src/utils/environment_config.py` itself.
 
 ---
 

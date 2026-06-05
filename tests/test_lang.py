@@ -8,6 +8,7 @@ from utils.environment_config import Environment, resolve_environment
 
 pytestmark = allure.feature("Countries API")
 
+# for the demo of data-driven tests
 LANGUAGES = json.loads(
     (Path(__file__).parent.parent / "test_data" / "lang_inputs.json").read_text()
 )

@@ -53,4 +53,4 @@ def test_region_europe_result_count(http_client, environment):
 
     results = response.json()
     assert isinstance(results, list)
-    assert len(results) > 40  # Europe has >40 sovereign states; conservative lower bound
+    assert len(results) > 40  # Europe has >40 regions; conservative lower bound

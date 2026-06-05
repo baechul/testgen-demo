@@ -67,13 +67,44 @@ Three rule files in `.claude/rules/` govern this codebase. Read them before maki
 - `code-style.md` — Python style: type hints on fixtures, import ordering, naming conventions, assertion failure messages, domain-bound constant comments
 
 ## Session Logging Protocol
-- Maintain a file named `CLAUDE_LOG.md` in the project root to preserve progress state across sessions.
-- If `CLAUDE_LOG.md` does not exist, create it immediately upon your first task.
-- **Mandatory Action:** Before marking any major task as complete, concluding a feature, or ending a continuous work block, append a new timestamped entry to `CLAUDE_LOG.md`.
-- Each entry must explicitly detail:
-  1. **Date & Objective:** The target goal of the current session.
-  2. **Actions Taken:** Specific files created, modified, or deleted.
-  3. **Obstacles & Solutions:** What failed, why it failed, and how you fixed it.
-  4. **Next Steps:** The exact, prioritized tasks that need to be tackled in the next session.
-- Keep the log concise, reverse-chronological (newest entries at the top), and focused purely on technical execution.
+
+`CLAUDE_LOG.md` in the project root is the single source of truth for what changed and why. It must be kept current — a future session should be able to read it and understand exactly where things stand.
+
+### When to log
+
+Append an entry **before** concluding any of the following — no exceptions:
+- A completed feature, bug fix, or refactor touching repository files
+- A skill created, modified, or deleted under `.claude/skills/`
+- An agent task (e.g. `/testgen`, `/testgen`, `/test-generator`, `/validator-generator`) that produces or modifies files in the repository
+- Any multi-step work block, even if interrupted mid-way
+
+Ephemeral work that leaves no repository artifacts (pure Q&A, read-only research, failed runs that were rolled back) does not require an entry.
+
+### Entry format
+
+Entries are reverse-chronological (newest at top). Each entry covers one logical work block:
+
+```markdown
+## YYYY-MM-DD — <one-line description of what was done>
+
+**Objective:** What was the goal.
+
+**Duration:** How long the task took to complete (e.g. `~15 min`, `~2 h`).
+
+**Actions Taken:**
+- `path/to/file` — what changed and why (created / modified / deleted)
+
+**Obstacles & Solutions:** What failed, why, and how it was resolved. Omit if nothing went wrong.
+
+**Next Steps:** Concrete, prioritized follow-up tasks for the next session. Omit if none.
+```
+
+### Scope: repository-level changes only
+
+Log changes to files that are checked into (or intended to be checked into) the repository:
+- Source files: `src/`, `tests/`, `conftest.py`, `config/`, `test_data/`
+- Project instructions and skills: `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`
+- CI and tooling: `.github/`, `pyproject.toml`, `Makefile`
+
+Do **not** log: eval workspaces, scratch files, generated Allure artifacts, or anything in `.gitignore`.
 

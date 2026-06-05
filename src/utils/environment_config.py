@@ -8,7 +8,7 @@ import yaml
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "environments.yaml"
 
-
+# Note that Environment is the immutable read-only dataclass once created. 
 @dataclass(frozen=True)
 class Environment:
     name: str
@@ -29,6 +29,10 @@ def load_environments() -> dict[str, dict[str, Any]]:
 
 
 def resolve_environment(name: str) -> Environment:
+    """ The central way of getting the Environment configuration 
+        It provides the central way of properly loading the given environment 
+        from the config/environments.yaml 
+    """
     config = load_environments()
 
     if name not in config:
